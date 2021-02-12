@@ -11,6 +11,7 @@ from GPMF_gyro import Extractor
 from matplotlib import pyplot as plt
 from vidgear.gears import WriteGear
 from _version import __version__
+import insta360_extract_utility as insta360_util
 
 from scipy import signal, interpolate
 
@@ -855,7 +856,7 @@ class InstaStabilizer(Stabilizer):
 
         # Get gyro data
 
-        self.gyro_data = self.instaCSVGyro(gyrocsv)
+        self.gyro_data = insta360_util.get_insta360_gyro_data(videopath)
 
 
         sosgyro = signal.butter(10, 5, "lowpass", fs=500, output="sos")
@@ -863,7 +864,7 @@ class InstaStabilizer(Stabilizer):
         self.gyro_data[:,0] -= 15
 
 
-        self.gyro_data[:,1] = -self.gyro_data[:,1]
+        self.gyro_data[:,1] = self.gyro_data[:,1]
         self.gyro_data[:,2] = self.gyro_data[:,2]
         self.gyro_data[:,3] = self.gyro_data[:,3]
 

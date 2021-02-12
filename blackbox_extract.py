@@ -2,25 +2,57 @@ from orangebox import Parser
 from scipy.spatial.transform import Rotation
 import math
 import numpy as np
+import insta360_extract_utility as insta_util
 
 class BlackboxExtractor:
-    def __init__(self, path):
-        print("Opening {}".format(path))
-        self.parser = Parser.load(path)
-        self.n_of_logs = self.parser.reader.log_count
+    def __init__(self, path, file_type='blackbox'):
+        self.extractor_type = file_type
+        if self.extractor_type =='blackbox':
+            self.parser = Parser.load(path)
+            self.n_of_logs = self.parser.reader.log_count
+            self.gyro_scale = self.parser.headers["gyro_scale"] #should be already scaled in the fc
+        else:
+            self.path = path
+            # Filtering - SMO4k has filtering in the utility, changes can be done by setting value to filtering_override in the format of [[orderOfFilter1, criticalFrequency1], [orderOfFilter2, criticalFrequency2]...]
+            self.filtering_override = None
 
-        self.gyro_scale = self.parser.headers["gyro_scale"] #should be already scaled in the fc
+        print("Opening {}".format(path))
         self.final_gyro_data = []
         self.extracted = False
         self.camera_angle = None
-
         self.gyro_rate = 0
 
-    def get_gyro_data(self,cam_angle_degrees=0):
-
+# Wrapper for backward compatibility and ability to extend in the future
+    def get_gyro_data(self, cam_angle_degrees=0):
         if self.extracted:
             return np.array(self.final_gyro_data)
-        
+
+        if self.extractor_type == 'smo4k':
+            try:
+                if self.filtering_override==None:
+                    gyro_data = insta_util.get_insta360_gyro_data(self.path)
+                else:
+                    gyro_data = insta_util.get_insta360_gyro_data(self.path, self.filtering_override)
+                self.extracted = True
+                self.camera_angle = 0
+                return self.final_gyro_data
+            except:
+                raise NameError('Failed to parse SMO4K file')
+
+        elif self.extractor_type == 'blackbox':
+            self.gyro_rate = self.final_gyro_data.shape[0]/(self.final_gyro_data[-1,0] - self.final_gyro_data[0,0])
+            self.extracted = True
+            return self.__get_gyro_data_blackbox(self, cam_angle_degrees)
+
+        else:
+            # if no match was found use blackbox (backwards compatibility)
+            self.gyro_rate = self.final_gyro_data.shape[0]/(self.final_gyro_data[-1,0] - self.final_gyro_data[0,0])
+            self.extracted = True
+            return self.__get_gyro_data_blackbox(self, cam_angle_degrees)
+
+
+    def __get_gyro_data_blackbox(self,cam_angle_degrees=0):
+
         self.camera_angle = cam_angle_degrees
         r  = Rotation.from_euler('x', self.camera_angle, degrees=True)
         
@@ -62,7 +94,6 @@ class BlackboxExtractor:
         self.extracted = True
 
         return self.final_gyro_data
-
 
 
 
