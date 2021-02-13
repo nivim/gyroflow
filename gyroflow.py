@@ -19,6 +19,7 @@ import bundled_images
 
 
 import stabilizer
+import insta360_extract_utility as insta360_util
 
 # https://en.wikipedia.org/wiki/List_of_digital_camera_brands
 cam_company_list = ["GoPro", "Runcam", "Insta360", "Caddx", "Foxeer", "DJI", "RED", "Canon", "Arri",
@@ -1789,6 +1790,10 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
         self.display_video_info()
 
         no_suffix = os.path.splitext(self.infile_path)[0]
+        
+        # check if Insta360
+        if insta360_util.isInsta360Video(self.infile_path):
+            self.camera_type_control.setCurrentText('smo4k')
 
         # check gyro logs by priority
         log_suffixes = [".bbl.csv", ".bfl.csv", ".csv", ".bbl"]
@@ -1895,6 +1900,7 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
 
         self.camera_type_control.setVisible(internal)
         self.camera_type_text.setVisible(internal)
+
 
 
     def open_gyro_func(self):
