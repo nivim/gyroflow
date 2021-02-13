@@ -88,7 +88,8 @@ def __parseAccRecord(fin, size):
         timecode, _, _, _, gyroPitch, gyroYaw, gyroRoll = struct.unpack("<Q6d", buf)
         tm = float(timecode/1000)
         d_times.append(tm)
-        d_gyros.append((tm, -gyroRoll, gyroPitch, -gyroYaw))
+        # d_gyros.append((tm, -gyroRoll, gyroPitch, -gyroYaw))
+        d_gyros.append((tm, -gyroPitch, -gyroYaw, gyroRoll))
     return np.array(d_times), np.array(d_gyros)
 
 def __arrayLowPassFilter(array, orderOfFilter, criticalFrequency):

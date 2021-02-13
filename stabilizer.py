@@ -858,32 +858,16 @@ class InstaStabilizer(Stabilizer):
 
         self.gyro_data = insta360_util.get_insta360_gyro_data(videopath)
 
+        # sosgyro = signal.butter(10, 5, "lowpass", fs=500, output="sos")
+        # self.gyro_data[:,1:4] = signal.sosfilt(sosgyro, self.gyro_data[:,1:4], 0) # Filter along "vertical" time axis
+        # self.gyro_data[:,0] -= 15
 
-        sosgyro = signal.butter(10, 5, "lowpass", fs=500, output="sos")
-        self.gyro_data[:,1:4] = signal.sosfilt(sosgyro, self.gyro_data[:,1:4], 0) # Filter along "vertical" time axis
-        self.gyro_data[:,0] -= 15
-
-
-        self.gyro_data[:,1] = self.gyro_data[:,1]
-        self.gyro_data[:,2] = self.gyro_data[:,2]
-        self.gyro_data[:,3] = self.gyro_data[:,3]
-
+        # self.gyro_data[:,1] = self.gyro_data[:,1]
+        # self.gyro_data[:,2] = self.gyro_data[:,2]
+        # self.gyro_data[:,3] = self.gyro_data[:,3]
         hero = 0
 
-        # Hero 6??
-        if hero == 6:
-            self.gyro_data[:,1] = self.gyro_data[:,1]
-            self.gyro_data[:,2] = -self.gyro_data[:,2]
-            self.gyro_data[:,3] = self.gyro_data[:,3]
-        elif hero == 5:
-            self.gyro_data[:,1] = -self.gyro_data[:,1]
-            self.gyro_data[:,2] = self.gyro_data[:,2]
-            self.gyro_data[:,3] = -self.gyro_data[:,3]
-            self.gyro_data[:,[2, 3]] = self.gyro_data[:,[3, 2]]
 
-        elif hero == 8:
-            # Hero 8??
-            self.gyro_data[:,[2, 3]] = self.gyro_data[:,[3, 2]]
 
         self.gyro_lpf_cutoff = gyro_lpf_cutoff
         
@@ -903,7 +887,6 @@ class InstaStabilizer(Stabilizer):
 
         # Other attributes
         initial_orientation = Rotation.from_euler('xyz', [0, 0, 0], degrees=True).as_quat()
-
         self.integrator = GyroIntegrator(self.gyro_data,zero_out_time=False,initial_orientation=initial_orientation)
         self.integrator.integrate_all()
         self.times = None
@@ -1002,7 +985,6 @@ class BBLStabilizer(Stabilizer):
                             rotated[2]]
 
                     data_list.append(f)
-
                 self.gyro_data = np.array(data_list)
 
 
@@ -1027,7 +1009,6 @@ class BBLStabilizer(Stabilizer):
                 
                     data_list.append([t, gx, gy, gz])
                 self.gyro_data = np.array(data_list)
-                print(self.gyro_data)
 
         else:
             self.bbe = BlackboxExtractor(bblpath)
@@ -1037,7 +1018,6 @@ class BBLStabilizer(Stabilizer):
         # This seems to make the orientation match. Implement auto match later
         #self.gyro_data[:,[2, 3]] = self.gyro_data[:,[3, 2]]
         #self.gyro_data[:,2] = -self.gyro_data[:,2]
-
         #self.gyro_data[:,[2, 3]] = self.gyro_data[:,[3, 2]]
         self.gyro_data[:,2] = self.gyro_data[:,2]
         #self.gyro_data[:,3] = -self.gyro_data[:,3]
