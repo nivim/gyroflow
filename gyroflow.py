@@ -2001,7 +2001,6 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
 
             # initiate stabilization
             if gyro_orientation_text=="smo4k" :
-                print('in SMO')
                 self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None)
             else:
                 heronum = int(gyro_orientation_text.replace("hero",""))
