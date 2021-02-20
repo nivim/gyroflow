@@ -48,7 +48,7 @@ def _truncate_gyro_data(gyro_data, exposure_timestamps):
     expo_time = exposure_timestamps[1]
     for i in range(0, len(gyro_data[:,0]), 1):
         if (gyro_data[:,0][i]-expo_time)>0:
-            gyro_sync_item = i+400
+            gyro_sync_item = i+340
             break
     gyro_data = np.delete(gyro_data, range(0, gyro_sync_item, 1), axis=0)
     return gyro_data
