@@ -696,9 +696,9 @@ class Stabilizer:
                 #cv2.imshow("Stabilized?", frame_undistort)
 
                 #print(self.stab_transform[frame_num])
-                frame_undistort = horizon.lock_horizon(current_time, frame_undistort)
+                frame_out = horizon.lock_horizon(current_time, frame_undistort)
 
-                frame_out = self.undistort.get_rotation_map(frame_undistort, self.stab_transform[frame_num])
+                frame_out = self.undistort.get_rotation_map(frame_out, self.stab_transform[frame_num])
 
                 #frame_out = self.undistort.get_rotation_map(frame, self.stab_transform[frame_num])
 
