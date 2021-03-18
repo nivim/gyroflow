@@ -16,6 +16,11 @@ from scipy import signal, interpolate
 
 import time
 
+import insta360_extract_utility as insta360_util
+import insta360_utility as insta360_xyz
+
+from horizon_lock import horizon_locker
+
 
 class Stabilizer:
     def __init__(self):
@@ -133,8 +138,8 @@ class Stabilizer:
         #plt.plot(self.integrator.get_raw_data("t") + d2, self.integrator.get_raw_data("z"))
         plt.xlabel("time [s]")
         plt.ylabel("omega z [rad/s]")
-
-        plt.show()
+        if debug_plots:
+            plt.show()
 
         # Temp new integrator with corrected time scale
 
@@ -643,7 +648,8 @@ class Stabilizer:
 
         
         tmap1, tmap2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(int(self.width * scale),int(self.height*scale)), update_new_K = False)
-
+        
+        horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4], data_frequency=500.0, acc_data=self.acc_xyz[:,1:4])
         i = 0
         while(True):
             # Read next frame
@@ -667,6 +673,8 @@ class Stabilizer:
 
             if success and i > 0:
                 
+                current_time = (self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)
+                
                 if scale != 1:
                     frame = cv2.resize(frame, (int(self.width * scale),int(self.height*scale)), interpolation=cv2.INTER_LINEAR)
                 
@@ -688,6 +696,8 @@ class Stabilizer:
                 #cv2.imshow("Stabilized?", frame_undistort)
 
                 #print(self.stab_transform[frame_num])
+                frame_undistort = horizon.lock_horizon(current_time, frame_undistort)
+
                 frame_out = self.undistort.get_rotation_map(frame_undistort, self.stab_transform[frame_num])
 
                 #frame_out = self.undistort.get_rotation_map(frame, self.stab_transform[frame_num])
@@ -712,6 +722,10 @@ class Stabilizer:
                 
                 size = np.array(frame_out.shape)
                 #frame_out = cv2.resize(frame_out, (int(size[1]), int(size[0])))
+                # current_time = (self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)
+                
+                # frame_out = horizon.lock_horizon(current_time, frame_out)
+                
 
                 if split_screen:
 
@@ -726,7 +740,8 @@ class Stabilizer:
                         if concatted.shape[1] > 1280:
                             concatted = cv2.resize(concatted, (1280, int(concatted.shape[0] * 1280 / concatted.shape[1])), interpolation=cv2.INTER_LINEAR)
                         cv2.imshow("Before and After", concatted)
-                        cv2.waitKey(2)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
                 else:
 
                     out.write(frame_out)
@@ -734,7 +749,8 @@ class Stabilizer:
                         if frame_out.shape[1] > 1280:
                             frame_out = cv2.resize(frame_out, (1280, int(frame_out.shape[0] * 1280 / frame_out.shape[1])), interpolation=cv2.INTER_LINEAR)
                         cv2.imshow("Stabilized?", frame_out)
-                        cv2.waitKey(2)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
 
         # When everything done, release the capture
         #out.release()
@@ -848,34 +864,19 @@ class InstaStabilizer(Stabilizer):
 
         # Get gyro data
 
-        self.gyro_data = self.instaCSVGyro(gyrocsv)
+        self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[[1, 0.0402]])
+        self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[])
+        # [1, 0.0173]
+        # sosgyro = signal.butter(10, 5, "lowpass", fs=500, output="sos")
+        # self.gyro_data[:,1:4] = signal.sosfilt(sosgyro, self.gyro_data[:,1:4], 0) # Filter along "vertical" time axis
+        # self.gyro_data[:,0] -= 15
 
-
-        sosgyro = signal.butter(10, 5, "lowpass", fs=500, output="sos")
-        self.gyro_data[:,1:4] = signal.sosfilt(sosgyro, self.gyro_data[:,1:4], 0) # Filter along "vertical" time axis
-        self.gyro_data[:,0] -= 15
-
-
-        self.gyro_data[:,1] = -self.gyro_data[:,1]
-        self.gyro_data[:,2] = self.gyro_data[:,2]
-        self.gyro_data[:,3] = self.gyro_data[:,3]
-
+        # self.gyro_data[:,1] = self.gyro_data[:,1]
+        # self.gyro_data[:,2] = self.gyro_data[:,2]
+        # self.gyro_data[:,3] = self.gyro_data[:,3]
         hero = 0
 
-        # Hero 6??
-        if hero == 6:
-            self.gyro_data[:,1] = self.gyro_data[:,1]
-            self.gyro_data[:,2] = -self.gyro_data[:,2]
-            self.gyro_data[:,3] = self.gyro_data[:,3]
-        elif hero == 5:
-            self.gyro_data[:,1] = -self.gyro_data[:,1]
-            self.gyro_data[:,2] = self.gyro_data[:,2]
-            self.gyro_data[:,3] = -self.gyro_data[:,3]
-            self.gyro_data[:,[2, 3]] = self.gyro_data[:,[3, 2]]
 
-        elif hero == 8:
-            # Hero 8??
-            self.gyro_data[:,[2, 3]] = self.gyro_data[:,[3, 2]]
 
         self.gyro_lpf_cutoff = gyro_lpf_cutoff
         
@@ -1324,21 +1325,21 @@ if __name__ == "__main__":
 
     # insta360 test
     
-    #stab = InstaStabilizer("test_clips/insta360.mp4", "camera_presets/SMO4K_4K_Wide43.json", gyrocsv="test_clips/insta360_gyro.csv")
-    #stab.auto_sync_stab(0.985,100 *24, 119 * 24, 70)
-    #stab.renderfile(100, 125, "insta360test4split.mp4",out_size = (2560,1440), split_screen=False, scale=0.5)
-
-    #exit()
+    stab = InstaStabilizer("PRO_VID_20210111_144304_00_010.mp4", "Insta360_SMO4K_2160P_4by3_wide.json",None, gyro_lpf_cutoff=-1)
+    stab.auto_sync_stab(0.14739000000000002,899, 2997, 30, debug_plots=False)
+    # stab.renderfile(100, 125, "insta360test4split.mp4",out_size = (2560,1440), split_screen=False, scale=0.5)
+    stab.renderfile(30,60, outpath="horizon_gyroflow_test.mp4",out_size=(4000,3000), split_screen=False, display_preview=True)
+    exit()
     #stab = GPMFStabilizer("test_clips/GX016017.MP4", "camera_presets/Hero_7_2.7K_60_4by3_wide.json") # Walk
     #stab = GPMFStabilizer("test_clips/GX016015.MP4", "camera_presets/gopro_calib2.JSON", ) # Rotate around
     #stab = GPMFStabilizer("test_clips/GX010010.MP4", "camera_presets/gopro_calib2.JSON", hero6=False) # Parking lot
 
-    stab = BBLStabilizer("test_clips/MasterTim17_caddx.mp4", "camera_presets/Nikon/Nikon_D5100_Nikkor_35mm_F_1_8_1280x720.json", "test_clips/starling.csv", use_csv=False, logtype = "gyroflow")
-    exit()
+    # stab = BBLStabilizer("test_clips/MasterTim17_caddx.mp4", "camera_presets/Nikon/Nikon_D5100_Nikkor_35mm_F_1_8_1280x720.json", "test_clips/starling.csv", use_csv=False, logtype = "gyroflow")
+    # exit()
     #stab.stabilization_settings(smooth = 0.8)
     # stab.auto_sync_stab(0.89,25*30, (2 * 60 + 22) * 30, 50) Gopro clips
 
-    stab.auto_sync_stab(0.21,1*30, 25 * 30, 50) # FPV clip
+    # stab.auto_sync_stab(0.21,1*30, 25 * 30, 50) # FPV clip
     #stab.stabilization_settings()
 
     # Visual stabilizer test
@@ -1352,7 +1353,7 @@ if __name__ == "__main__":
 
 
     #stab.renderfile(24, 63, "parkinglot_stab_3.mp4",out_size = (1920,1080))
-    stab.renderfile(0, 25, "mastertim_out.mp4",out_size = (1920,1080), split_screen = False, scale=1, display_preview = True)
+    # stab.renderfile(0, 25, "mastertim_out.mp4",out_size = (1920,1080), split_screen = False, scale=1, display_preview = True)
     #stab.stabilization_settings(smooth=0.6)
     #stab.renderfile(113, 130, "nurk_stabi3.mp4",out_size = (3072,1728))
 
