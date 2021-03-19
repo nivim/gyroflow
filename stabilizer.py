@@ -649,7 +649,7 @@ class Stabilizer:
         
         tmap1, tmap2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(int(self.width * scale),int(self.height*scale)), update_new_K = False)
         
-        horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4], data_frequency=500.0, acc_data=self.acc_xyz[:,1:4])
+        horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4], acc_data=self.acc_xyz[:,1:4], limit_acc_range_percentiles=35)
         i = 0
         while(True):
             # Read next frame
@@ -844,7 +844,7 @@ class GPMFStabilizer(Stabilizer):
 
 
 class InstaStabilizer(Stabilizer):
-    def __init__(self, videopath, calibrationfile, gyrocsv, fov_scale = 1.6, gyro_lpf_cutoff = -1):
+    def __init__(self, videopath, calibrationfile, gyrocsv, fov_scale = 1.6, gyro_lpf_cutoff = -1, revertMirror=False):
         
         super().__init__()
         
@@ -866,13 +866,19 @@ class InstaStabilizer(Stabilizer):
 
         self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[[1, 0.0402]])
         self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[])
+        
+
+        if revertMirror:
+            self.acc_xyz[:,3] = self.acc_xyz[:,3]*-1
+            self.gyro_data[:,1] = self.gyro_data[:,1]*-1
+            self.gyro_data[:,2] = self.gyro_data[:,2]*-1
+        # self.acc_xyz = insta360_xyz._filtering(acc_filtered, [[1, 0.4]]
         # [1, 0.0173]
         # sosgyro = signal.butter(10, 5, "lowpass", fs=500, output="sos")
         # self.gyro_data[:,1:4] = signal.sosfilt(sosgyro, self.gyro_data[:,1:4], 0) # Filter along "vertical" time axis
         # self.gyro_data[:,0] -= 15
 
-        # self.gyro_data[:,1] = self.gyro_data[:,1]
-        # self.gyro_data[:,2] = self.gyro_data[:,2]
+
         # self.gyro_data[:,3] = self.gyro_data[:,3]
         hero = 0
 
@@ -1323,12 +1329,19 @@ if __name__ == "__main__":
     """
 
 
-    # insta360 test
-    
-    stab = InstaStabilizer("PRO_VID_20210111_144304_00_010.mp4", "Insta360_SMO4K_2160P_4by3_wide.json",None, gyro_lpf_cutoff=-1)
-    stab.auto_sync_stab(0.14739000000000002,899, 2997, 30, debug_plots=False)
+    # insta360 test old
     # stab.renderfile(100, 125, "insta360test4split.mp4",out_size = (2560,1440), split_screen=False, scale=0.5)
-    stab.renderfile(30,60, outpath="horizon_gyroflow_test.mp4",out_size=(4000,3000), split_screen=False, display_preview=True)
+
+#   Insta360 Test New
+    # stab = InstaStabilizer("PRO_VID_20210111_144304_00_010.mp4", "Insta360_SMO4K_2160P_4by3_wide.json",None, gyro_lpf_cutoff=-1)
+    # stab.auto_sync_stab(0.14739000000000002,899, 2997, 30, debug_plots=False)
+    # stab.renderfile(30,60, outpath="horizon_gyroflow_test_pres35.mp4",out_size=(4000,3000), split_screen=False, display_preview=True)
+
+#   OneR Test
+    stab = InstaStabilizer("PRO_VID_20210216_081944_10_043.mp4", "Insta360_OneR_1inch_Module_Leica_Super-Elmar-A_13_2_14_2988p_16by9.json",None, gyro_lpf_cutoff=-1)
+    stab.auto_sync_stab(0.11739000000000002,525, 1100, 30, debug_plots=True)
+    stab.renderfile(4,65, outpath="horizon_gyroflow_OneR43_long.mp4",out_size=(5312,2988), split_screen=False, display_preview=True)
+
     exit()
     #stab = GPMFStabilizer("test_clips/GX016017.MP4", "camera_presets/Hero_7_2.7K_60_4by3_wide.json") # Walk
     #stab = GPMFStabilizer("test_clips/GX016015.MP4", "camera_presets/gopro_calib2.JSON", ) # Rotate around

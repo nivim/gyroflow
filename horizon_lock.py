@@ -3,10 +3,18 @@ from ahrs.filters import Madgwick, AngularRate
 from ahrs import QuaternionArray
 import cv2
 import math
+from scipy.stats import iqr
 
 class horizon_locker:
     # Filter data based on presented data (with or without accelerometer data)
-    def __init__(self, timestamps , gyro_data,data_frequency, acc_data=None ):
+    def __init__(self, timestamps , gyro_data, acc_data=None ,data_frequency=None ,limit_acc_range_percentiles=None):
+        # Limit acc data (prevent outliers)
+        if limit_acc_range_percentiles is not None:
+            acc_data=self.__limit_range(acc_data, range=(limit_acc_range_percentiles, 100-limit_acc_range_percentiles))
+        # Calculate data frequency
+        if data_frequency is None:
+            data_frequency=1/np.mean(np.diff(timestamps))
+
         if acc_data is not None:
             self.filtered_imu = Madgwick(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency)) 
         else:
@@ -21,17 +29,27 @@ class horizon_locker:
         array = np.asarray(array)
         return (np.abs(array - value)).argmin()
 
-    def get_horizon_deg_angle_by_frame(self, time_sec):
+    def get_horizon_deg_angle_by_time(self, time_sec):
         self.pointer_position = self.__find_nearest_position(self.timestamps , time_sec)
         # return the angle in degrees
         return self.roll_in_rads[self.pointer_position] * 180/math.pi
 
-    def rotate_image(self, image, angle):
+    def __rotate_image(self, image, angle):
         image_center = tuple(np.array(image.shape[1::-1]) / 2)
         rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
         result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
         return result
 
     def lock_horizon(self, time_sec, frame):
-        angle = self.get_horizon_deg_angle_by_frame(time_sec)*-1
-        return self.rotate_image(frame, angle)
+        angle = self.get_horizon_deg_angle_by_time(time_sec)*-1
+        return self.__rotate_image(frame, angle)
+
+    def __limit_range(self, data, range=(5,95)):
+        num_rows, num_cols = data.shape
+        i_list = [0,1,2]
+        for i in i_list:
+            iqr_val = iqr(data[:,i], rng=range)
+            avg = np.average(data[:,i])
+            data[:,i] = np.clip(data[:,i],avg-iqr_val,avg+iqr_val)
+        return data
+

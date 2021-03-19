@@ -1431,6 +1431,7 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
         self.camera_type_control.addItem("hero7")
         self.camera_type_control.addItem("hero8")
         self.camera_type_control.addItem("smo4k")
+        self.camera_type_control.addItem("Insta360 OneR")
 
         self.input_controls_layout.addWidget(self.camera_type_control)
 
@@ -2042,15 +2043,18 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
             # GPMF file
 
             gyro_orientation_text = self.camera_type_control.currentText().lower().strip()
-            if gyro_orientation_text not in ["hero6","hero5", "hero7", "hero8", "smo4k"]:
+            if gyro_orientation_text not in ["hero6","hero5", "hero7", "hero8", "smo4k", 'Insta360 OneR']:
                 self.show_error("{} is not a valid orientation preset (yet). Sorry about that".format(gyro_orientation_text))
                 self.export_button.setEnabled(False)
                 self.sync_correction_button.setEnabled(False)
                 return
 
             if gyro_orientation_text=="smo4k":
-                print("Gyro lpf-", gyro_lpf)
+                # print("Gyro lpf-", gyro_lpf)
                 self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf)
+            elif gyro_orientation_text=="Insta360 OneR":
+                # print("Gyro lpf-", gyro_lpf)
+                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, revertMirror=True)
             else:
                 heronum = int(gyro_orientation_text.replace("hero",""))
                 self.stab = stabilizer.GPMFStabilizer(self.infile_path, self.preset_path, hero=heronum, fov_scale=fov_val, gyro_lpf_cutoff = gyro_lpf)
