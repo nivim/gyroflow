@@ -2043,7 +2043,7 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
             # GPMF file
 
             gyro_orientation_text = self.camera_type_control.currentText().lower().strip()
-            if gyro_orientation_text not in ["hero6","hero5", "hero7", "hero8", "smo4k", 'Insta360 OneR']:
+            if gyro_orientation_text not in ["hero6","hero5", "hero7", "hero8", "smo4k", "insta360 oner"]:
                 self.show_error("{} is not a valid orientation preset (yet). Sorry about that".format(gyro_orientation_text))
                 self.export_button.setEnabled(False)
                 self.sync_correction_button.setEnabled(False)
@@ -2052,7 +2052,7 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
             if gyro_orientation_text=="smo4k":
                 # print("Gyro lpf-", gyro_lpf)
                 self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf)
-            elif gyro_orientation_text=="Insta360 OneR":
+            elif gyro_orientation_text=="insta360 oner":
                 # print("Gyro lpf-", gyro_lpf)
                 self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, revertMirror=True)
             else:

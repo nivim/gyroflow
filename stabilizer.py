@@ -649,7 +649,10 @@ class Stabilizer:
         
         tmap1, tmap2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(int(self.width * scale),int(self.height*scale)), update_new_K = False)
         
-        horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4], acc_data=self.acc_xyz[:,1:4], limit_acc_range_percentiles=35)
+        horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4], acc_data=self.acc_xyz[:,1:4], limit_acc_range_percentiles=15)
+
+        # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.camera_matrix, self.distCoeffs,(self.height, self.width),1)
+
         i = 0
         while(True):
             # Read next frame
@@ -778,6 +781,8 @@ class GPMFStabilizer(Stabilizer):
         # Camera undistortion stuff
         self.undistort = FisheyeCalibrator()
         self.undistort.load_calibration_json(calibrationfile, True)
+        self.camera_matrix = self.undistort.get_camera_matrix()
+        self.distCoeffs = self.undistort.get_distortion_coefficients
         self.map1, self.map2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(self.width,self.height))
 
         # Get gyro data
@@ -861,7 +866,6 @@ class InstaStabilizer(Stabilizer):
         self.undistort = FisheyeCalibrator()
         self.undistort.load_calibration_json(calibrationfile, True)
         self.map1, self.map2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(self.width,self.height))
-
         # Get gyro data
 
         self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[[1, 0.0402]])
@@ -1333,14 +1337,15 @@ if __name__ == "__main__":
     # stab.renderfile(100, 125, "insta360test4split.mp4",out_size = (2560,1440), split_screen=False, scale=0.5)
 
 #   Insta360 Test New
-    # stab = InstaStabilizer("PRO_VID_20210111_144304_00_010.mp4", "Insta360_SMO4K_2160P_4by3_wide.json",None, gyro_lpf_cutoff=-1)
+    stab = InstaStabilizer("PRO_VID_20210111_144304_00_010.mp4", "Insta360_SMO4K_2160P_4by3_wide.json",None, gyro_lpf_cutoff=-1)
     # stab.auto_sync_stab(0.14739000000000002,899, 2997, 30, debug_plots=False)
+    stab.manual_sync_correction(0.004999999999999574,0.0003999999999997894,smooth=0.14739000000000002)
     # stab.renderfile(30,60, outpath="horizon_gyroflow_test_pres35.mp4",out_size=(4000,3000), split_screen=False, display_preview=True)
 
 #   OneR Test
-    stab = InstaStabilizer("PRO_VID_20210216_081944_10_043.mp4", "Insta360_OneR_1inch_Module_Leica_Super-Elmar-A_13_2_14_2988p_16by9.json",None, gyro_lpf_cutoff=-1)
-    stab.auto_sync_stab(0.11739000000000002,525, 1100, 30, debug_plots=True)
-    stab.renderfile(4,65, outpath="horizon_gyroflow_OneR43_long.mp4",out_size=(5312,2988), split_screen=False, display_preview=True)
+    # stab = InstaStabilizer("PRO_VID_20210216_081944_10_043.mp4", "Insta360_OneR_1inch_Module_Leica_Super-Elmar-A_13_2_14_2988p_16by9.json",None, gyro_lpf_cutoff=-1)
+    # stab.auto_sync_stab(0.11739000000000002,525, 1100, 30, debug_plots=True)
+    # stab.renderfile(4,65, outpath="horizon_gyroflow_OneR43_long.mp4",out_size=(5312,2988), split_screen=False, display_preview=True)
 
     exit()
     #stab = GPMFStabilizer("test_clips/GX016017.MP4", "camera_presets/Hero_7_2.7K_60_4by3_wide.json") # Walk
