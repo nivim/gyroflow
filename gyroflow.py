@@ -1432,8 +1432,14 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
         self.camera_type_control.addItem("hero8")
         self.camera_type_control.addItem("smo4k")
         self.camera_type_control.addItem("Insta360 OneR")
+        self.camera_type_control.addItem("Insta360Go90deg")
 
         self.input_controls_layout.addWidget(self.camera_type_control)
+
+        self.horizon_lock_activate = QtWidgets.QCheckBox("Horizon Lock(ish)")
+
+        self.input_controls_layout.addWidget(self.horizon_lock_activate)
+        self.horizon_lock_activate.setVisible(False)
 
         self.input_controls_layout.addWidget(QtWidgets.QLabel('Input low-pass filter cutoff (Hz). Set to -1 to disable'))
         self.input_lpf_control = QtWidgets.QSpinBox(self)
@@ -1846,6 +1852,8 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
         # check if Insta360
         if insta360_util.isInsta360Video(self.infile_path):
             self.camera_type_control.setCurrentText('smo4k')
+            self.horizon_lock_activate.setVisible(True)
+            self.horizon_lock_activate.setChecked(True)
 
         # check gyro logs by priority
         log_suffixes = [".bbl.csv", ".bfl.csv", ".csv", ".bbl"]
@@ -1952,6 +1960,7 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
 
         self.camera_type_control.setVisible(internal)
         self.camera_type_text.setVisible(internal)
+        
 
 
     def open_gyro_func(self):
@@ -2043,18 +2052,21 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
             # GPMF file
 
             gyro_orientation_text = self.camera_type_control.currentText().lower().strip()
-            if gyro_orientation_text not in ["hero6","hero5", "hero7", "hero8", "smo4k", "insta360 oner"]:
+            if gyro_orientation_text not in ["hero6","hero5", "hero7", "hero8", "smo4k", "insta360 oner", "insta360go90deg"]:
                 self.show_error("{} is not a valid orientation preset (yet). Sorry about that".format(gyro_orientation_text))
                 self.export_button.setEnabled(False)
                 self.sync_correction_button.setEnabled(False)
                 return
-
             if gyro_orientation_text=="smo4k":
                 # print("Gyro lpf-", gyro_lpf)
-                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf)
+                print('Is horizon lock: ',self.horizon_lock_activate.isChecked())
+                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, horizon_lock=self.horizon_lock_activate.isChecked())
             elif gyro_orientation_text=="insta360 oner":
                 # print("Gyro lpf-", gyro_lpf)
-                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, revertMirror=True)
+                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, revertMirror=True, horizon_lock=self.horizon_lock_activate.isChecked())            
+            elif gyro_orientation_text=="insta360go90deg":
+                # print("Gyro lpf-", gyro_lpf)
+                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, revertMirror=True, InstaType="Insta360Go90deg", horizon_lock=self.horizon_lock_activate.isChecked())
             else:
                 heronum = int(gyro_orientation_text.replace("hero",""))
                 self.stab = stabilizer.GPMFStabilizer(self.infile_path, self.preset_path, hero=heronum, fov_scale=fov_val, gyro_lpf_cutoff = gyro_lpf)

@@ -648,8 +648,8 @@ class Stabilizer:
 
         
         tmap1, tmap2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(int(self.width * scale),int(self.height*scale)), update_new_K = False)
-        
-        horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4], acc_data=self.acc_xyz[:,1:4], limit_acc_range_percentiles=15)
+        if self.horizon_lock_activate:
+            horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4],self.d1, acc_data=self.acc_xyz[:,1:4], limit_acc_range_percentiles=25, added_rotate_angle=0)
 
         # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.camera_matrix, self.distCoeffs,(self.height, self.width),1)
 
@@ -699,7 +699,8 @@ class Stabilizer:
                 #cv2.imshow("Stabilized?", frame_undistort)
 
                 #print(self.stab_transform[frame_num])
-                frame_out = horizon.lock_horizon(current_time, frame_undistort)
+                if self.horizon_lock_activate:
+                    frame_out = horizon.lock_horizon(current_time, frame_undistort)
 
                 frame_out = self.undistort.get_rotation_map(frame_out, self.stab_transform[frame_num])
 
@@ -782,7 +783,7 @@ class GPMFStabilizer(Stabilizer):
         self.undistort = FisheyeCalibrator()
         self.undistort.load_calibration_json(calibrationfile, True)
         self.camera_matrix = self.undistort.get_camera_matrix()
-        self.distCoeffs = self.undistort.get_distortion_coefficients
+        self.distCoeffs = self.undistort.get_distortion_coefficients()
         self.map1, self.map2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(self.width,self.height))
 
         # Get gyro data
@@ -849,7 +850,7 @@ class GPMFStabilizer(Stabilizer):
 
 
 class InstaStabilizer(Stabilizer):
-    def __init__(self, videopath, calibrationfile, gyrocsv, fov_scale = 1.6, gyro_lpf_cutoff = -1, revertMirror=False):
+    def __init__(self, videopath, calibrationfile, gyrocsv, fov_scale = 1.6, gyro_lpf_cutoff = -1, revertMirror=False, InstaType="", horizon_lock=False):
         
         super().__init__()
         
@@ -869,13 +870,29 @@ class InstaStabilizer(Stabilizer):
         # Get gyro data
 
         self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[[1, 0.0402]])
-        self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[])
+        self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[1, 0.0402])
         
+        if InstaType=="Insta360Go90deg":
+            tempZ = self.gyro_data[:,2][:]
+            tempy = self.gyro_data[:,1][:]
+            self.gyro_data[:,2] = tempy*-1
+            self.gyro_data[:,1] = tempZ
+            tempZ_xyz = self.gyro_xyz[:,3][:]
+            tempY_xyz = self.gyro_xyz[:,2][:]
+            self.gyro_xyz[:,3] = tempY_xyz*-1
+            self.gyro_xyz[:,2] = tempZ_xyz
 
         if revertMirror:
             self.acc_xyz[:,3] = self.acc_xyz[:,3]*-1
             self.gyro_data[:,1] = self.gyro_data[:,1]*-1
             self.gyro_data[:,2] = self.gyro_data[:,2]*-1
+
+        if horizon_lock:
+            self.horizon_lock_activate = True
+        else:
+            self.horizon_lock_activate = False           
+
+
         # self.acc_xyz = insta360_xyz._filtering(acc_filtered, [[1, 0.4]]
         # [1, 0.0173]
         # sosgyro = signal.butter(10, 5, "lowpass", fs=500, output="sos")
@@ -1094,6 +1111,7 @@ class BBLStabilizer(Stabilizer):
 
 class OpticalStabilizer:
     def __init__(self, videopath, calibrationfile):
+        super().__init__()
         # General video stuff
         self.cap = cv2.VideoCapture(videopath)
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -1104,7 +1122,8 @@ class OpticalStabilizer:
 
         # Camera undistortion stuff
         self.undistort = StandardCalibrator() #FisheyeCalibrator()
-        self.undistort.load_calibration_json(calibrationfile, True)
+        self.undistort.load_calibration_json(calibrationfile, printinfo=True)
+        self.distCoeffs = self.undistort.get_distortion_coefficients()
         self.map1, self.map2 = self.undistort.get_maps(1.6,new_img_dim=(self.width,self.height))
 
         # Other attributes
@@ -1337,15 +1356,23 @@ if __name__ == "__main__":
     # stab.renderfile(100, 125, "insta360test4split.mp4",out_size = (2560,1440), split_screen=False, scale=0.5)
 
 #   Insta360 Test New
-    stab = InstaStabilizer("PRO_VID_20210111_144304_00_010.mp4", "Insta360_SMO4K_2160P_4by3_wide.json",None, gyro_lpf_cutoff=-1)
+    # stab = InstaStabilizer("PRO_VID_20210111_144304_00_010.mp4", "Insta360_SMO4K_2160P_4by3_wide.json",None, gyro_lpf_cutoff=-1)
     # stab.auto_sync_stab(0.14739000000000002,899, 2997, 30, debug_plots=False)
-    stab.manual_sync_correction(0.004999999999999574,0.0003999999999997894,smooth=0.14739000000000002)
+    # stab.manual_sync_correction(0.004999999999999574,0.0003999999999997894,smooth=0.14739000000000002)
     # stab.renderfile(30,60, outpath="horizon_gyroflow_test_pres35.mp4",out_size=(4000,3000), split_screen=False, display_preview=True)
 
 #   OneR Test
     # stab = InstaStabilizer("PRO_VID_20210216_081944_10_043.mp4", "Insta360_OneR_1inch_Module_Leica_Super-Elmar-A_13_2_14_2988p_16by9.json",None, gyro_lpf_cutoff=-1)
     # stab.auto_sync_stab(0.11739000000000002,525, 1100, 30, debug_plots=True)
     # stab.renderfile(4,65, outpath="horizon_gyroflow_OneR43_long.mp4",out_size=(5312,2988), split_screen=False, display_preview=True)
+
+    stab = OpticalStabilizer('/Users/nivgarber/Pictures/Explorer/PRO_VID_20210314_143034_00_030.mp4', "Insta360_SMO4K_2160P_4by3_wide.json")
+    # stab.undistort = FisheyeCalibrator()
+    # stab.undistort.load_calibration_json(calibrationfile, True)
+    # stab.camera_matrix = stab.undistort.get_camera_matrix()
+    # stab.distCoeffs = stab.undistort.get_distortion_coefficients()
+    # print(stab.undistort.get_camera_matrix())
+    # print(stab.map1, stab.map2)
 
     exit()
     #stab = GPMFStabilizer("test_clips/GX016017.MP4", "camera_presets/Hero_7_2.7K_60_4by3_wide.json") # Walk

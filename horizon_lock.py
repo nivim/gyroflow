@@ -1,5 +1,5 @@
 import numpy as np
-from ahrs.filters import Madgwick, AngularRate
+from ahrs.filters import Madgwick, AngularRate, AQUA, Complementary, Mahony
 from ahrs import QuaternionArray
 import cv2
 import math
@@ -7,7 +7,7 @@ from scipy.stats import iqr
 
 class horizon_locker:
     # Filter data based on presented data (with or without accelerometer data)
-    def __init__(self, timestamps , gyro_data, acc_data=None ,data_frequency=None ,limit_acc_range_percentiles=None):
+    def __init__(self, timestamps , gyro_data, time_delta, acc_data=None ,data_frequency=None ,limit_acc_range_percentiles=None, added_rotate_angle=0):
         # Limit acc data (prevent outliers)
         if limit_acc_range_percentiles is not None:
             acc_data=self.__limit_range(acc_data, range=(limit_acc_range_percentiles, 100-limit_acc_range_percentiles))
@@ -23,14 +23,16 @@ class horizon_locker:
         self.roll_in_rads = self.filtered_imu_in_angles[:,0]
         self.timestamps = timestamps
         self.pointer_position = 0
+        self.time_delta = time_delta
+        self.added_rotate_angle = added_rotate_angle
 
 # finds the element closest to the value - In this case the time closest to the frame time
     def __find_nearest_position(self, array, value):
         array = np.asarray(array)
         return (np.abs(array - value)).argmin()
 
-    def get_horizon_deg_angle_by_time(self, time_sec):
-        self.pointer_position = self.__find_nearest_position(self.timestamps , time_sec)
+    def get_horizon_deg_angle_by_time(self, time_sec, time_delta):
+        self.pointer_position = self.__find_nearest_position(self.timestamps , time_sec + time_delta)
         # return the angle in degrees
         return self.roll_in_rads[self.pointer_position] * 180/math.pi
 
@@ -41,7 +43,7 @@ class horizon_locker:
         return result
 
     def lock_horizon(self, time_sec, frame):
-        angle = self.get_horizon_deg_angle_by_time(time_sec)*-1
+        angle = self.get_horizon_deg_angle_by_time(time_sec, self.time_delta)*-1 + self.added_rotate_angle
         return self.__rotate_image(frame, angle)
 
     def __limit_range(self, data, range=(5,95)):
