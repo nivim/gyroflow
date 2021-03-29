@@ -1021,6 +1021,9 @@ class StandardCalibrator:
                 self.RMS_error = presets["fisheye_params"]["RMS_error"]
                 self.K = np.array(presets["fisheye_params"]["camera_matrix"])
                 self.D = np.array(presets["fisheye_params"]["distortion_coeffs"])
+                # print('Loaded Clibaration')
+                # print("camera_matrix", self.K)
+                # print("distortion_coeffs", self.D)
             except KeyError:
                 raise KeyError("Error loading preset file")
 
@@ -1080,37 +1083,37 @@ if __name__ == "__main__":
     #images = glob.glob('calibrationImg/*.jpg')
 
     
-    CAMERA_DIST_COEFS = [
-        0.01945104325838463,
-        0.1093842438193295,
-        -0.10977045532092518,
-        0.037924531473717875
-    ]
+    # CAMERA_DIST_COEFS = [
+    #     0.01945104325838463,
+    #     0.1093842438193295,
+    #     -0.10977045532092518,
+    #     0.037924531473717875
+    # ]
 
-    DIST = np.array(CAMERA_DIST_COEFS)
+    # DIST = np.array(CAMERA_DIST_COEFS)
 
-    CAMERA_MATRIX = np.array(
-    [
-                [
-                    847.6148226238896,
-                    0.0,
-                    960.0
-                ],
-                [
-                    0.0,
-                    852.8260246970873,
-                    720.0
-                ],
-                [
-                    0.0,
-                    0.0,
-                    1.0
-                ]
-            ]
-    )
+    # CAMERA_MATRIX = np.array(
+    # [
+    #             [
+    #                 847.6148226238896,
+    #                 0.0,
+    #                 960.0
+    #             ],
+    #             [
+    #                 0.0,
+    #                 852.8260246970873,
+    #                 720.0
+    #             ],
+    #             [
+    #                 0.0,
+    #                 0.0,
+    #                 1.0
+    #             ]
+    #         ]
+    # )
 
     calibrator = FisheyeCalibrator()
-    calibrator.load_calibration_json("camera_presets/gopro_calib2.JSON")
+    calibrator.load_calibration_json("Insta360_SMO4K_2160P_4by3_wide.JSON")
 
     image_points = np.arange(101,121).reshape(1,-1,2).astype('float32')
     undistorted_corners = cv2.fisheye.undistortPoints(image_points, CAMERA_MATRIX, DIST)
