@@ -870,7 +870,7 @@ class InstaStabilizer(Stabilizer):
         # Get gyro data
 
         self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[[1, 0.0402]])
-        self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[[1, 0.0402]])
+        self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[])
         
         if InstaType=="Insta360Go90deg":
             tempZ = self.gyro_data[:,2][:]

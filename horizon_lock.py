@@ -1,13 +1,13 @@
 import numpy as np
 from ahrs.filters import Madgwick, AngularRate, AQUA, Complementary, Mahony
-from ahrs import QuaternionArray
+from ahrs import QuaternionArray, Quaternion
 import cv2
 import math
 from scipy.stats import iqr
 
 class horizon_locker:
     # Filter data based on presented data (with or without accelerometer data)
-    def __init__(self, timestamps , gyro_data, time_delta, acc_data=None ,data_frequency=None ,limit_acc_range_percentiles=None, added_rotate_angle=0):
+    def __init__(self, timestamps , gyro_data, time_delta, acc_data=None ,data_frequency=None ,limit_acc_range_percentiles=None, added_rotate_angle=0, algo='Mahony'):
         # Limit acc data (prevent outliers)
         if limit_acc_range_percentiles is not None:
             acc_data=self.__limit_range(acc_data, range=(limit_acc_range_percentiles, 100-limit_acc_range_percentiles))
@@ -16,7 +16,16 @@ class horizon_locker:
             data_frequency=1/np.mean(np.diff(timestamps))
 
         if acc_data is not None:
-            self.filtered_imu = Madgwick(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency)) 
+            if algo == 'Mahony':
+                self.filtered_imu = Mahony(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency), k_I=0.2, k_P=0.8)
+            elif algo == 'Madgwich':
+                self.filtered_imu = Madgwick(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency))
+            elif algo == 'Complementary':
+                self.filtered_imu = Complementary(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency))
+            elif algo == 'AQUA':
+                self.filtered_imu = AQUA(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency))
+            else:
+                self.filtered_imu = Mahony(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency))
         else:
             self.filtered_imu = AngularRate(gyr=gyro_data, frequency=float(data_frequency))
         self.filtered_imu_in_angles = QuaternionArray(self.filtered_imu.Q).to_angles()
