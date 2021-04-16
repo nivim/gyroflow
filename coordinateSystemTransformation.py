@@ -41,7 +41,7 @@ class coordinateSystemTransformation:
             self.input_orientation = self.input_orientation + np.array([rotation])
 
         if gyro_data_input is not None:
-            self.input_data(gyro_data_input, acc_data=acc_data_input)
+            self.input_data(gyro_data_input, acc_data_input=acc_data_input)
 
     def __transform_system(self, data, transform):
         '''
