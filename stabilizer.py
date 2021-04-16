@@ -21,6 +21,7 @@ import insta360_utility as insta360_xyz
 
 from horizon_lock import horizon_locker
 
+from coordinateSystemTransformation import coordinateSystemTransformation as cst
 
 class Stabilizer:
     def __init__(self):
@@ -878,6 +879,11 @@ class InstaStabilizer(Stabilizer):
             self.gyro_data[:,2] = self.gyro_data[:,2]*-1    
         
         if InstaType=="Insta360Go90deg":
+            go_horizon = cst(input_coordinate_system='go', gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
+            self.gyro_xyz = go_horizon.gyro_data_xyz
+            self.acc_xyz = go_horizon.acc_data_xyz
+            go_gyroflow = cst(input_coordinate_system='go',rotation=[-90,0,0], gyro_data_input=self.gyro_xyz)
+            self.gyro_data = go_gyroflow.gyroflow()
             import copy
             temp_gyro_data = copy.deepcopy(gyro_data)
             self.gyro_data[:,2] = temp_gyro_data[:,1]  * -1
