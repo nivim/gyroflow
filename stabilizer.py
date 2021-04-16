@@ -882,7 +882,7 @@ class InstaStabilizer(Stabilizer):
             go_horizon = cst(input_coordinate_system='go', rotation=[0,0,0], gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
             self.gyro_xyz = go_horizon.gyro_data_xyz
             self.acc_xyz = go_horizon.acc_data_xyz
-            go_gyroflow = cst(input_coordinate_system='go',rotation=[-90,0,0], gyro_data_input=self.gyro_xyz)
+            go_gyroflow = cst(input_coordinate_system='go',rotation=[0,0,0], gyro_data_input=self.gyro_xyz)
             self.gyro_data = go_gyroflow.gyroflow()
 
 
