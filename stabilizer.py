@@ -650,7 +650,7 @@ class Stabilizer:
         
         tmap1, tmap2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(int(self.width * scale),int(self.height*scale)), update_new_K = False)
         if self.horizon_lock_activate:
-            horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4],self.d1, acc_data=self.acc_xyz[:,1:4], limit_acc_range_percentiles=25, added_rotate_angle=0)
+            horizon = horizon_locker(self.gyro_xyz[:,0], self.gyro_xyz[:,1:4],self.d1, acc_data=self.acc_xyz[:,1:4], added_rotate_angle=0)
 
         # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.camera_matrix, self.distCoeffs,(self.height, self.width),1)
 
@@ -870,7 +870,7 @@ class InstaStabilizer(Stabilizer):
         self.map1, self.map2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(self.width,self.height))
         # Get gyro data
 
-        self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[[1, 0.0402]])
+        self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[])
         self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[])
 
         if revertMirror:
@@ -878,21 +878,12 @@ class InstaStabilizer(Stabilizer):
             self.gyro_data[:,1] = self.gyro_data[:,1]*-1
             self.gyro_data[:,2] = self.gyro_data[:,2]*-1    
         
-        if InstaType=="Insta360Go90deg":
-            go_horizon = cst(input_coordinate_system='go', gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
+        if InstaType=="Insta360Go":
+            go_horizon = cst(input_coordinate_system='go', rotation=[0,0,0], gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
             self.gyro_xyz = go_horizon.gyro_data_xyz
             self.acc_xyz = go_horizon.acc_data_xyz
             go_gyroflow = cst(input_coordinate_system='go',rotation=[-90,0,0], gyro_data_input=self.gyro_xyz)
             self.gyro_data = go_gyroflow.gyroflow()
-            import copy
-            temp_gyro_data = copy.deepcopy(gyro_data)
-            self.gyro_data[:,2] = temp_gyro_data[:,1]  * -1
-            self.gyro_data[:,1] = temp_gyro_data[:,2]
-
-            tempZ_xyz = self.gyro_xyz[:,3][:]
-            tempY_xyz = self.gyro_xyz[:,2][:]
-            self.gyro_xyz[:,3] = tempY_xyz*-1
-            self.gyro_xyz[:,2] = tempZ_xyz
 
 
 
