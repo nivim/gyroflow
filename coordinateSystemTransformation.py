@@ -14,19 +14,19 @@ class coordinateSystemTransformation:
         # Orientation transformation TO!! XYZ
         self.orientation_libary = {
             'hero5' : np.array([180,-90,0]),
-            'hero6' : np.array([-90,0,90]),
-            'hero7' : np.array([-90,0,90]),
+            'hero6' : np.array([-90,0,-90]),
+            'hero7' : np.array([-90,0,-90]),
             'hero8' : np.array([0,90,0]),
             'oner' : np.array([0,0,0]),
             'smo4k' : np.array([0,180,0]),
             'go' : np.array([-90,0,0]),
             # Assuming blackbox is already converted to gyroflow format
-            'blackbox' : np.array([-90,0,90]),
-            'gyroflow' : np.array([-90,0,90])
+            'blackbox' : np.array([-90,0,-90]),
+            'gyroflow' : np.array([-90,0,-90])
         }
 
         self.input_orientation = [0,0,0]
-        self.output_orientation = self.orientation_libary.get('gyroflow') *-1
+        self.output_orientation = np.array([0,-90,90])
         self.is_data = False
         self.gyro_data_xyz = None
         self.acc_data_xyz = None
@@ -61,7 +61,7 @@ class coordinateSystemTransformation:
         return transformed_dataset
 
     def __camera_transform(self, gyro_in, transform, acc_in=None):
-        gyro_out = self.__dataset_transform(gyro_in, self.input_orientation)
+        gyro_out = self.__dataset_transform(gyro_in, transform)
         if acc_in is not None:
             acc_out = self.__dataset_transform(acc_in, transform)
         else:
@@ -92,7 +92,10 @@ class coordinateSystemTransformation:
         
     
 if __name__ == "__main__":
-    transform = coordinateSystemTransformation(input_coordinate_system='smo4k')
-    transform.input_data(gyro_data_input=np.array([[0,-1,-2,-3], [1,4,5,6]]))
+    transform = coordinateSystemTransformation()
+    inp = np.array([[0,-2,-3,1], [1,4,5,6]])
+    # inp = np.array([[0.00213053, 0.00106526, 0.01171791], [-0.01065264, -0.00426106,  0.01917476]])
+    transform.input_data(gyro_data_input=inp)
+    print(inp)
     print(transform.gyro_data_xyz)
     print(transform.gyroflow())
