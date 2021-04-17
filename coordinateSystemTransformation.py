@@ -26,7 +26,7 @@ class coordinateSystemTransformation:
         }
 
         self.input_orientation = [0,0,0]
-        self.output_orientation = np.array([0,-90,90])
+        self.output_orientation = np.array([90,0,-90])
         self.is_data = False
         self.gyro_data_xyz = None
         self.acc_data_xyz = None
@@ -92,8 +92,8 @@ class coordinateSystemTransformation:
         
     
 if __name__ == "__main__":
-    transform = coordinateSystemTransformation()
-    inp = np.array([[0,-2,-3,1], [1,4,5,6]])
+    transform = coordinateSystemTransformation(input_coordinate_system='go')
+    inp = np.array([[0,1,2,3], [1,4,5,6]])
     # inp = np.array([[0.00213053, 0.00106526, 0.01171791], [-0.01065264, -0.00426106,  0.01917476]])
     transform.input_data(gyro_data_input=inp)
     print(inp)

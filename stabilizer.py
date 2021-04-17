@@ -873,10 +873,10 @@ class InstaStabilizer(Stabilizer):
         self.gyro_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[])
         self.gyro_xyz, self.acc_xyz = insta360_xyz.get_insta360_gyro_data(videopath, filterArray=[])
 
-        if revertMirror:
-            self.acc_xyz[:,3] = self.acc_xyz[:,3]*-1
-            self.gyro_data[:,1] = self.gyro_data[:,1]*-1
-            self.gyro_data[:,2] = self.gyro_data[:,2]*-1    
+        # if revertMirror:
+        #     self.acc_xyz[:,3] = self.acc_xyz[:,3]*-1
+        #     self.gyro_data[:,1] = self.gyro_data[:,1]*-1
+        #     self.gyro_data[:,2] = self.gyro_data[:,2]*-1    
         
         if InstaType=="Insta360Go":
             go_horizon = cst(input_coordinate_system='go', rotation=[0,0,0], gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
