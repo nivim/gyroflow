@@ -22,6 +22,8 @@ import time
 
 import insta360_utility as insta360_util
 
+from coordinateSystemTransformation import coordinateSystemTransformation as cst
+
 class Stabilizer:
     def __init__(self):
 
@@ -1022,6 +1024,8 @@ class InstaStabilizer(Stabilizer):
         self.map1, self.map2 = self.undistort.get_maps(self.undistort_fov_scale,new_img_dim=(self.width,self.height))
 
         # Get gyro data
+        # self.gyro_data, self.acc_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[], revertIMU=False)
+        # self.camera_type = InstaType
         if InstaType=="smo4k":
             gyro_data_input, self.acc_data = insta360_util.get_insta360_gyro_data(videopath, filterArray=[])
         elif InstaType=="insta360 oner":
@@ -1036,9 +1040,6 @@ class InstaStabilizer(Stabilizer):
         self.gyro_data[:,1] = gyro_data_input[:,2][:] * -1
         self.gyro_data[:,2] = gyro_data_input[:,3][:]
         self.gyro_data[:,3] = gyro_data_input[:,1][:] * -1
-
-        hero = 0
-
 
         self.gyro_lpf_cutoff = gyro_lpf_cutoff
 
