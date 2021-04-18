@@ -815,7 +815,6 @@ class GPMFStabilizer(Stabilizer):
         
         if self.gyro_lpf_cutoff > 0:
             self.filter_gyro()
-
         # Other attributes
         initial_orientation = Rotation.from_euler('xyz', [0, 0, 0], degrees=True).as_quat()
 
@@ -877,6 +876,11 @@ class InstaStabilizer(Stabilizer):
         #     self.acc_xyz[:,3] = self.acc_xyz[:,3]*-1
         #     self.gyro_data[:,1] = self.gyro_data[:,1]*-1
         #     self.gyro_data[:,2] = self.gyro_data[:,2]*-1    
+        if InstaType=="SMO4K":
+            smo_horizon = cst(input_coordinate_system='smo4k', rotation=[0,0,0], gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
+            self.gyro_xyz = smo_horizon.gyro_data_xyz
+            self.acc_xyz = smo_horizon.acc_data_xyz
+            self.gyro_data, self.acc_data = smo_horizon.gyroflow()
         
         if InstaType=="Insta360Go":
             go_horizon = cst(input_coordinate_system='go', rotation=[0,0,0], gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
