@@ -17,7 +17,7 @@ class horizon_locker:
 
         if acc_data is not None:
             if algo == 'Mahony':
-                self.filtered_imu = Mahony(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency), k_I=0.2, k_P=0.8)
+                self.filtered_imu = Mahony(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency), k_I=0.2, k_P=1.1)
             elif algo == 'Madgwich':
                 self.filtered_imu = Madgwick(gyr=gyro_data, acc=acc_data, frequency=float(data_frequency))
             elif algo == 'Complementary':
