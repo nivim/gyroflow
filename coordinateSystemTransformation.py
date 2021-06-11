@@ -38,8 +38,9 @@ class coordinateSystemTransformation:
         else:
             self.input_orientation = self.orientation_libary.get(input_coordinate_system)
         
+        self.initial_rotation = None
         if rotation is not None:
-            self.input_orientation = self.input_orientation + np.array([rotation])
+            self.initial_rotation = np.array(rotation)
 
         if gyro_data_input is not None:
             self.input_data(gyro_data_input, acc_data_input=acc_data_input)
@@ -70,8 +71,13 @@ class coordinateSystemTransformation:
         return gyro_out, acc_out
 
     def input_data(self, gyro_data_input, acc_data_input=None):
-        
-        self.gyro_data_xyz, self.acc_data_xyz = self.__camera_transform(gyro_data_input, self.input_orientation, acc_in=acc_data_input)
+        self.gyro_data_xyz, self.acc_data_xyz = gyro_data_input, acc_data_input
+        if self.initial_rotation is not None:
+            print([0,self.initial_rotation[1],0])
+            self.gyro_data_xyz, self.acc_data_xyz = self.__camera_transform(self.gyro_data_xyz, [0,self.initial_rotation[1],0 ], acc_in=self.acc_data_xyz)
+        self.gyro_data_xyz, self.acc_data_xyz = self.__camera_transform(self.gyro_data_xyz, self.input_orientation, acc_in=self.acc_data_xyz)
+        if self.initial_rotation is not None:
+            self.gyro_data_xyz, self.acc_data_xyz = self.__camera_transform(self.gyro_data_xyz, [self.initial_rotation[0],0,0], acc_in=self.acc_data_xyz)
         self.is_data = True
         self.__as_gyroflow()
 
@@ -93,7 +99,7 @@ class coordinateSystemTransformation:
         
     
 if __name__ == "__main__":
-    transform = coordinateSystemTransformation(input_coordinate_system='hero5')
+    transform = coordinateSystemTransformation(input_coordinate_system='smo4k', rotation=[0,180,0])
     inp = np.array([[0,-1,2,-3], [1,4,5,6]])
     # inp = np.array([[0.00213053, 0.00106526, 0.01171791], [-0.01065264, -0.00426106,  0.01917476]])
     transform.input_data(gyro_data_input=inp)
