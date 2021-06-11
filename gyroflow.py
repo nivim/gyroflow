@@ -2063,7 +2063,7 @@ class StabUtilityBarebone(QtWidgets.QMainWindow):
                 self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, InstaType="SMO4K", horizon_lock=self.horizon_lock_activate.isChecked())
             elif gyro_orientation_text=="insta360 oner":
                 # print("Gyro lpf-", gyro_lpf)
-                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, revertMirror=True, horizon_lock=self.horizon_lock_activate.isChecked())            
+                self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, ,InstaType="INSTAONER",revertMirror=True, horizon_lock=self.horizon_lock_activate.isChecked())            
             elif gyro_orientation_text=="insta360go":
                 # print("Gyro lpf-", gyro_lpf)
                 self.stab = stabilizer.InstaStabilizer(self.infile_path, self.preset_path, None, gyro_lpf_cutoff=gyro_lpf, revertMirror=True, InstaType="Insta360Go", horizon_lock=self.horizon_lock_activate.isChecked())

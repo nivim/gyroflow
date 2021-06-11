@@ -702,6 +702,8 @@ class Stabilizer:
                 #print(self.stab_transform[frame_num])
                 if self.horizon_lock_activate:
                     frame_out = horizon.lock_horizon(current_time, frame_undistort)
+                else:
+                    frame_out = frame_undistort
 
                 frame_out = self.undistort.get_rotation_map(frame_out, self.stab_transform[frame_num])
 
@@ -882,6 +884,12 @@ class InstaStabilizer(Stabilizer):
             self.acc_xyz = smo_horizon.acc_data_xyz
             self.gyro_data, self.acc_data = smo_horizon.gyroflow()
         
+        if InstaType=="INSTAONER":
+            oner_horizon = cst(input_coordinate_system='oner', rotation=[0,0,0], gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
+            self.gyro_xyz = oner_horizon.gyro_data_xyz
+            self.acc_xyz = oner_horizon.acc_data_xyz
+            self.gyro_data, self.acc_data = oner_horizon.gyroflow()
+
         if InstaType=="Insta360Go":
             go_horizon = cst(input_coordinate_system='go', rotation=[0,0,0], gyro_data_input=self.gyro_xyz, acc_data_input=self.acc_xyz)
             self.gyro_xyz = go_horizon.gyro_data_xyz
